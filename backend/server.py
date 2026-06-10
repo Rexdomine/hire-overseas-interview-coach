@@ -14,7 +14,8 @@ load_dotenv('/opt/data/.env')
 APP_NAME = 'Hire Overseas Interview Coach — Hermes Brain'
 PORT = int(os.getenv('PORT', '8791'))
 BRAIN_TOKEN = os.getenv('HERMES_BRAIN_TOKEN', '')
-OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY', '')
+OPENROUTER_API_KEY=os.getenv('OPENROUTER_API_KEY', '')
+AI_ENABLED = os.getenv('INTERVIEW_COACH_AI_ENABLED', '0') == '1'
 MODEL = os.getenv('INTERVIEW_COACH_MODEL', 'openai/gpt-oss-20b:free')
 
 app = FastAPI(title=APP_NAME, version='1.0.0')
@@ -119,8 +120,8 @@ def normalize_payload(data: Dict[str, Any]) -> Dict[str, Any]:
     return out
 
 async def call_openrouter(problem: str, tech_stack: str) -> Optional[Dict[str, Any]]:
-    if not OPENROUTER_API_KEY: return None
-    async with httpx.AsyncClient(timeout=45) as client:
+    if not (AI_ENABLED and OPENROUTER_API_KEY): return None
+    async with httpx.AsyncClient(timeout=12) as client:
         res=await client.post('https://openrouter.ai/api/v1/chat/completions', headers={'Authorization':f'Bearer {OPENROUTER_API_KEY}','Content-Type':'application/json','HTTP-Referer':'https://hire-overseas-interview-coach.vercel.app','X-Title':'Hire Overseas Interview Coach'}, json={'model':MODEL,'messages':[{'role':'system','content':SYSTEM_PROMPT},{'role':'user','content':f'Tech stack: {tech_stack}\nInterview problem/request:\n{problem}'}],'temperature':0.25,'response_format':{'type':'json_object'}})
         res.raise_for_status()
         txt=res.json()['choices'][0]['message']['content']
@@ -128,7 +129,7 @@ async def call_openrouter(problem: str, tech_stack: str) -> Optional[Dict[str, A
 
 @app.get('/health')
 def health():
-    return {'ok':True,'app':APP_NAME,'model_configured':bool(OPENROUTER_API_KEY),'source':'VPS Hermes/Groot brain'}
+    return {'ok':True,'app':APP_NAME,'model_configured':bool(OPENROUTER_API_KEY),'ai_enabled':AI_ENABLED,'source':'VPS Hermes/Groot brain'}
 
 @app.post('/coach')
 async def coach(req: CoachRequest, x_hermes_brain_token: str = Header(default='')):
