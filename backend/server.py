@@ -63,10 +63,14 @@ Rules:
 """
 
 def clean_json_text(text: str) -> str:
-    text = text.strip()
+    text = (text or '').strip()
     if text.startswith('```'):
         text = re.sub(r'^```(?:json)?\s*', '', text)
         text = re.sub(r'\s*```$', '', text)
+    start = text.find('{')
+    end = text.rfind('}')
+    if start != -1 and end != -1 and end > start:
+        return text[start:end+1].strip()
     return text.strip()
 
 def fallback_solution(problem: str, tech_stack: str) -> Dict[str, Any]:
