@@ -1,0 +1,9 @@
+{
+  "scripts": {
+    "dev": "vercel dev",
+    "start": "python3 backend/server.py"
+  },
+  "dependencies": {
+    "@vercel/node": "latest"
+  }
+}
